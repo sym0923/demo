@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html>
+<script src="jquery-3.7.1.min.js"></script>
+<script src="ajax.js"></script>
+<head>
+    <meta charset="UTF-8">
+    <title>代码生成</title>
+    <style type="text/css">
+        body{
+            background-color: #eee;
+        }
+        .header{
+            background-color: #eee;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            font-size: 15px;
+            color: #336038;
+            &>.headerContent{
+                height: 190px;
+                width: 1350px;
+                background-color: #eee;
+            }
+        }
+        input{
+            font-family: Arial, sans-serif;
+            background-color: white;
+            border: 1px solid rgba(39, 174, 96, 0.491);
+            border-radius: 5px;
+            outline: none;
+            width: 200px;
+            height: 25px;
+        }
+        select{
+            font-family: Arial, sans-serif;
+            background-color: white;
+            border: 1px solid rgba(39, 174, 96, 0.491);
+            border-radius: 5px;
+            outline: none;
+            width: 208px;
+        }
+        .tr{
+            display: flex;
+            margin-top: 10px;
+            & >  div{
+                width: 330px;
+                margin-right: 10px;
+                display: flex;
+                justify-content: right;
+            }
+        }
+        .tool{
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+        }
+        .button {
+            appearance: none;
+            backface-visibility: hidden;
+            background-color: #27ae60;
+            border-radius: 8px;
+            border-style: none;
+            box-shadow: rgba(39, 174, 96, .15) 0 4px 9px;
+            box-sizing: border-box;
+            color: #fff;
+            cursor: pointer;
+            display: inline-block;
+            font-family: Inter,-apple-system,system-ui,"Segoe UI",Helvetica,Arial,sans-serif;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: normal;
+            line-height: 1.5;
+            outline: none;
+            overflow: hidden;
+            position: relative;
+            text-align: center;
+            text-decoration: none;
+            transform: translate3d(0, 0, 0);
+            transition: all .3s;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            vertical-align: top;
+            white-space: nowrap;
+            margin-left: 5px;
+            margin-right: 5px;
+            width: 125px;
+            height: 30px;
+        }
+
+        .button:hover {
+            background-color: #069d45;
+            opacity: 1;
+            transform: translateY(0);
+            transition-duration: .35s;
+        }
+
+        .button:active {
+            transform: translateY(2px);
+            transition-duration: .35s;
+        }
+
+        .button:hover {
+            box-shadow: rgba(39, 174, 96, .2) 0 6px 12px;
+        }
+        .content{
+            display: flex;
+            justify-content: center;
+        }
+        .table{
+            width: 40%;
+            background-color: #eee;
+            & > div div:first-child{
+                width: 10%;
+                display: flex;
+                justify-content: center;
+                border-bottom: 1px solid #000;
+                border-left: 1px solid #000;
+                border-top: 1px solid #000;
+                cursor: pointer;
+            }
+            & > div  div:nth-child(2){
+                width: 35%;
+                display: flex;
+                justify-content: left;
+                border: 1px solid #000;
+            }
+            & > div  div:nth-child(3){
+                width: 55%;
+                display: flex;
+                justify-content: left;
+                border-bottom: 1px solid #000;
+                border-right: 1px solid #000;
+                border-top: 1px solid #000;
+                word-wrap: break-word;
+            }
+        }
+        .dataTitle{
+            display: flex;
+            justify-content: center;
+            background-color: #b4d6fa;
+        }
+        [sty=dataRow]{
+            display: flex;
+            justify-content: left;
+            background-color: #eee;
+            cursor:pointer;
+            & > div{
+                word-break:break-all;
+                user-select: none;
+            }
+            & input{
+                width: 15px;
+                cursor: pointer;
+            }
+        }
+        [sty=dataRow]:hover{
+            background-color: #fae5d5 !important;
+        }
+        .rowSelect{
+            background-color: #abdabe !important;
+        }
+        .text{
+            width: 60%;
+            & > textarea{
+                height: 650px;
+                width: 100%;
+                outline: none;
+            }
+        }
+        .tem{
+            display: none;
+        }
+    </style>
+    <script type="text/javascript">
+        $(document).ready(function() {
+            $(':checkbox').click(function(){
+                checkClick($(this));
+            })
+            $('[sty=dataRow]').click(function(){
+                let ck= $(this).find(':checkbox');
+                checkClick(ck);
+            });
+            function checkClick(o){
+                if(o.length==0)return;
+                let ck= o.parent().parent();
+                if(o[0].checked){
+                    o[0].checked=false;
+                    ck.removeClass("rowSelect");
+                }else{
+                    o[0].checked=true;
+                    ck.addClass("rowSelect");
+                }
+            }
+            $('#all').click(function(){
+                let ck= $(".table [sty=dataRow]");
+                for (let i=0;i<ck.length;i++) {
+                    let box= $(ck[i]).find(":checkbox");
+                    checkClick(box)
+                }
+            });
+            initPar();
+        });
+        function search(){
+            savePar();
+            $(".table > div[class!=dataTitle][class!=tem]").remove();
+            $.ajax({
+                type: "POST",
+                url: "/api/tables",
+                data: JSON.stringify(getPar()),
+                dataType:"json",
+                contentType:"application/json",
+                success: function(msg){
+                    if(msg.code=="0"){
+                        var length = msg.data.length;
+                        for(let i=0;i<length;i++){
+                            var tem= $(".tem").clone(true);
+                            let tbname= msg.data[i].tableName;
+                            let remark= msg.data[i].remark;
+                            tem.find("[name=tbName]").text(tbname);
+                            tem.find("[name=remark]").text(remark);
+                            tem.removeClass("tem");
+                            $(".table").append(tem);
+                        }
+                    }
+                    $("#textarea").val(msg.msg);
+                }
+            });
+        }
+        function generateOne(o){
+            $("#textarea").val("")
+            var par = getPar();
+            par.tables=[];
+            par.generateOne=o;
+            var rows = $(".table :checkbox:checked");
+            for(let i=0;i<rows.length;i++){
+                var row = $(rows[i]).parent().parent();
+                let tbname= row.find("[name=tbName]").text();
+                let remark= row.find("[name=remark]").text();
+                let obj={};
+                obj.tableName=tbname;
+                obj.remark=remark;
+                par.tables[i]=obj;
+            }
+            ajaxPostBlob("/api/generateOne",JSON.stringify(par),function (o){
+                $("#textarea").val(o)
+            },"json");
+        }
+        function generate(){
+            $("#textarea").val("");
+            var par = getPar();
+            par.tables=[];
+            var rows = $(".table :checkbox:checked");
+            for(let i=0;i<rows.length;i++){
+                var row = $(rows[i]).parent().parent();
+                let tbname= row.find("[name=tbName]").text();
+                let remark= row.find("[name=remark]").text();
+                let obj={};
+                obj.tableName=tbname;
+                obj.remark=remark;
+                par.tables[i]=obj;
+            }
+            let responseType="json";
+            if($("#isLocal").val()==="0"){
+                responseType="blob"
+            }
+            ajaxPostBlob("/api/generate",JSON.stringify(par),function (o){
+                 if($("#isLocal").val()==="1"){
+                     $("#textarea").val(o)
+                 }else{
+                    var blob = new Blob([o]);
+                    const url = window.URL.createObjectURL(blob)
+                    if (window.navigator.msSaveBlob) {
+                        try {
+                            window.navigator.msSaveBlob(blob, "CodeGenerate.zip");
+                            $("#textarea").val("代码生成成功。")
+                        } catch (e) {
+                            console.log(e);
+                        }
+                    } else {
+                        // 谷歌浏览器 创建a标签 添加download属性下载
+                        var downloadElement = document.createElement('a');
+                        downloadElement.href = url;
+                        downloadElement.target = '_blank';
+                        downloadElement.download = `CodeGenerate.zip`; //下载后文件名
+                        document.body.appendChild(downloadElement);
+                        downloadElement.click(); //点击下载
+                        document.body.removeChild(downloadElement); //下载完成移除元素
+                        window.URL.revokeObjectURL(url); //释放掉blob对象
+                        $("#textarea").val("代码生成成功。")
+                    }
+                }
+            },responseType);
+        }
+        function getPar(){
+            let obj={};
+            obj.url=$("#url").val();
+            obj.uname=$("#uname").val();
+            obj.pwd=$("#pwd").val();
+            obj.dbName=$("#dbName").val();
+            obj.realPath=$("#realPath").val();
+            obj.isdata=$("#isdata").val()==="1";
+            obj.isInterface=$("#isInterface").val()==="1";
+            obj.author=$("#author").val();
+            obj.isLocal=$("#isLocal").val()==="1";
+            obj.packageName=$("#packageName").val();
+            obj.entitySuffix=$("#entitySuffix").val();
+            obj.serverSuffix=$("#serverSuffix").val();
+            return obj;
+        }
+        function savePar(){
+            localStorage.setItem("configurl", $("#url").val());
+            localStorage.setItem("configuname", $("#uname").val());
+            localStorage.setItem("configpwd", $("#pwd").val());
+            localStorage.setItem("configdbName", $("#dbName").val());
+            localStorage.setItem("configrealPath", $("#realPath").val());
+            localStorage.setItem("configisdata", $("#isdata").val());
+            localStorage.setItem("configisInterface", $("#isInterface").val());
+            localStorage.setItem("configauthor", $("#author").val());
+            localStorage.setItem("configisLocal", $("#isLocal").val());
+            localStorage.setItem("configpackageName", $("#packageName").val());
+            localStorage.setItem("configentitySuffix", $("#entitySuffix").val());
+            localStorage.setItem("configserverSuffix", $("#serverSuffix").val());
+        }
+        function initPar(){
+            $("#url").val(localStorage.getItem("configurl"));
+            $("#uname").val(localStorage.getItem("configuname"));
+            $("#pwd").val(localStorage.getItem("configpwd"));
+            $("#dbName").val(localStorage.getItem("configdbName"));
+            $("#packageName").val(localStorage.getItem("configpackageName"));
+            let isdata= localStorage.getItem("configisdata");
+            if(isdata!=null){
+                $("#isdata").val(isdata);
+            }
+            let Interface= localStorage.getItem("configisInterface");
+            if(Interface!=null){
+                $("#isInterface").val(Interface);
+            }
+            let isLocal= localStorage.getItem("configisLocal");
+            if(isLocal!=null){
+                $("#isLocal").val(isLocal);
+            }
+            let entitySuffix= localStorage.getItem("configentitySuffix");
+            if(entitySuffix==null){
+                entitySuffix="Entity";
+            }
+            $("#entitySuffix").val(entitySuffix);
+            let serverSuffix= localStorage.getItem("configserverSuffix");
+            if(serverSuffix==null){
+                serverSuffix="Server";
+            }
+            $("#serverSuffix").val(serverSuffix);
+            let author= localStorage.getItem("configauthor");
+            if(author==null){
+                author="CodeGenerate";
+            }
+            $("#author").val(author);
+            let path= localStorage.getItem("configrealPath");
+            if(path==null){
+                path="/CodeGenerate";
+            }
+            $("#realPath").val(path);
+        }
+    </script>
+</head>
+<body>
+<div class="header">
+    <div class="headerContent">
+        <div class="tr">
+            <div>连接地址：<input class="urlinput" id="url"  spellcheck="false"> </div>
+            <div>数据库名称：<input id="dbName" spellcheck="false"></div>
+            <div>用户名：<input id="uname" spellcheck="false"></div>
+            <div>密码：<input id="pwd" spellcheck="false"></div>
+        </div>
+        <div class="tr">
+            <div>保存路径：<input id="realPath" value="/generate" spellcheck="false"></div>
+            <div>包路径：<input id="packageName" spellcheck="false" ></div>
+            <div>模型后缀：<input value="Entity" id="entitySuffix" spellcheck="false"></div>
+            <div>服务后缀：<input value="Server" id="serverSuffix" spellcheck="false"></div>
+        </div>
+        <div class="tr">
+            <div>LomBox：<select id="isdata"><option value="1">启用</option><option value="0">禁用</option></select></div>
+            <div>下载/本地：<select id="isLocal"><option value="1">本地</option><option value="0">下载</option></select></div>
+            <div>作者：<input id="author" value="CodeGenerate" spellcheck="false"></div>
+            <div>服务接口：<select id="isInterface"><option value="0">不生成</option><option value="1">生成</option></select></div>
+        </div>
+        <div class="tool">
+            <button class="button" role="button" onclick="search()">查询表</button>
+            <button class="button" role="button" onclick="generate()">批量生成</button>
+            <button class="button" role="button" onclick="generateOne(1)">查看实体</button>
+            <button class="button" role="button" onclick="generateOne(2)">查看接口</button>
+            <button class="button" role="button" onclick="generateOne(3)">查看服务</button>
+            <button class="button" role="button" onclick="generateOne(4)">查看Mapper</button>
+            <button class="button" role="button" onclick="generateOne(5)">查看xml</button>
+            <button class="button" role="button" onclick="generateOne(6)">查看Controller</button>
+        </div>
+    </div>
+</div>
+<div class="content">
+    <div class="table">
+        <div class="dataTitle">
+            <div id="all">反选</div>
+            <div>表名</div>
+            <div>注释</div>
+        </div>
+        <div sty="dataRow" class="tem">
+            <div><input type="checkbox"></div>
+            <div name="tbName"></div>
+            <div name="remark"></div>
+        </div>
+    </div>
+    <div class="text">
+        <textarea id="textarea" spellcheck="false"></textarea>
+    </div>
+</div>
+</body>
+</html>
